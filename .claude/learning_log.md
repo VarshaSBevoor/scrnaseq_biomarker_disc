@@ -260,9 +260,63 @@ After PCA, each cell is a point in 20D space. `sc.pp.neighbors(n_pcs=20, n_neigh
 ### Why train the classifier per cell type (Phase 3)?
 Different cell types respond differently to IFN-β. The genes distinguishing ctrl from stim in T cells are different from those in monocytes. Training per cell type gives you cell-type-specific biomarker candidates.
 
+---
+
+## Phase 3: ML Classifier (stimulated vs control, per cell type)
+
+### Why per cell type?
+Training one classifier on all cells would confound cell type identity with stimulation response — it would learn "T cell in ctrl" vs "monocyte in stim" rather than the actual biological signal. Training per cell type asks: *within this cell type, what genes distinguish ctrl from stim?*
+
+### Input features
+- Used 2,000 HVGs (not all 13,727 genes) — noise genes dilute signal and cause overfitting
+- `X = np.array(subset.X)` — log-normalized expression values
+- `y` — binary label: stim=1, ctrl=0
+
+### Why donor-aware train/test split?
+Random splitting lets the same donor's cells appear in both train and test. The model could learn donor-specific quirks and still get high accuracy — that's **data leakage**. Holding out entire donors tests whether the model generalizes to *new* donors, which is the real question.
+
+### Model: Logistic Regression
+- `C=1.0` — regularization parameter (inverse of strength). Low C = strong regularization = simpler model. With 2,000 features and relatively few cells, regularization prevents overfitting.
+- `max_iter=1000` — gives the optimizer enough iterations to converge
+
+### Understanding model evaluation metrics
+
+**Confusion matrix concepts:**
+- **True Positive (TP):** model predicted stim, cell is stim ✓
+- **True Negative (TN):** model predicted ctrl, cell is ctrl ✓
+- **False Positive (FP):** model predicted stim, cell is actually ctrl ✗
+- **False Negative (FN):** model predicted ctrl, cell is actually stim ✗
+
+**Precision** = TP / (TP + FP) → of all cells predicted as stim, how many actually are?
+**Recall** = TP / (TP + FN) → of all actual stim cells, how many did we catch?
+**F1** = harmonic mean of precision and recall = 2 × (P × R) / (P + R)
+
+**Why F1 and not just accuracy?**
+Accuracy can be misleading with imbalanced classes. If 90% of cells are ctrl, a model that always predicts ctrl gets 90% accuracy but is useless. F1 balances precision and recall, giving a fairer picture.
+
+**Macro avg F1** = average F1 across both classes (ctrl and stim), treating them equally regardless of size.
+
+### Results per cell type:
+| Cell type | F1 score |
+|-----------|----------|
+| CD14+ Monocytes | 0.998 |
+| FCGR3A+ Monocytes | 0.997 |
+| B cells | 0.988 |
+| CD8 T cells | 0.980 |
+| NK cells | 0.970 |
+| CD4 T cells | 0.963 |
+| Dendritic cells | 0.959 |
+| Megakaryocytes | 0.717 |
+
+**Why Megakaryocytes are lower:** Only 346 cells total — after donor-aware split, train set is tiny. Not enough examples to learn a reliable boundary. Real limitation to flag.
+
+**Why monocytes score highest:** Monocytes are primary responders to interferon signaling. IFN-β causes a strong, consistent transcriptional shift in monocytes across all donors.
+
+**Why 100% (or near) isn't suspicious here:** IFN-β stimulation causes a massive, well-documented transcriptional response. The UMAP showed ctrl and stim completely separated — the biology is genuinely that strong. Verified no data leakage by confirming every test donor had both ctrl and stim cells.
+
 ## TODO (upcoming steps):
 - [x] Phase 1: QC + preprocessing
 - [x] Phase 2: Clustering + cell type annotation
-- [ ] Phase 3: ML classifier (stimulated vs control, per cell type)
+- [x] Phase 3: ML classifier (stimulated vs control, per cell type)
 - [ ] Phase 4: SHAP analysis → biomarker candidates
 - [ ] Phase 5: Biological validation
