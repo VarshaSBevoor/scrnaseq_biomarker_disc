@@ -314,9 +314,92 @@ Accuracy can be misleading with imbalanced classes. If 90% of cells are ctrl, a 
 
 **Why 100% (or near) isn't suspicious here:** IFN-β stimulation causes a massive, well-documented transcriptional response. The UMAP showed ctrl and stim completely separated — the biology is genuinely that strong. Verified no data leakage by confirming every test donor had both ctrl and stim cells.
 
-## TODO (upcoming steps):
+---
+
+## Phase 4: SHAP Analysis → Biomarker Candidates
+
+### What is SHAP?
+SHAP (SHapley Additive exPlanations) explains *why* a model made each prediction. For every cell, every gene gets a SHAP value:
+- **Positive** → gene pushed prediction toward stim
+- **Negative** → gene pushed prediction toward ctrl
+- **Near zero** → gene didn't matter for this cell
+
+Averaging absolute SHAP values across all cells gives a gene-level importance ranking — the top genes are your biomarker candidates.
+
+**Advantage over model coefficients:** SHAP accounts for feature interactions and gives cell-level explanations, not just a global ranking.
+
+### Reading a SHAP summary plot:
+- **Red dots, positive SHAP** → gene is highly expressed in stim cells, drives stim prediction ✓ (biologically expected)
+- **Blue dots, negative SHAP** → gene is lowly expressed in stim cells, drives ctrl prediction
+- Wide spread of dots → gene is important across many cells
+- Tight cluster near zero → gene doesn't matter much
+
+### Top genes for CD14+ Monocytes:
+CCL8, IFITM3, ISG15, APOBEC3A, IFIT2, LY6E, RSAD2, TNFSF10, IFIT3, ISG20, IFIT1, IDO1, CXCL10, CXCL11
+
+All are known IFN-β response genes — the model rediscovered known biology with no prior biological knowledge.
+
+### Consensus biomarker candidates (appearing across multiple cell types):
+| Gene | # cell types |
+|------|-------------|
+| ISG15 | 8 (all cell types) |
+| IFIT3 | 7 |
+| LY6E | 7 |
+| ISG20 | 7 |
+| IFIT1 | 6 |
+| IFIT2 | 4 |
+| IRF7 | 4 |
+| OAS1 | 3 |
+
+**Key insight:** These genes (ISG = Interferon Stimulated Gene, IFIT = Interferon-Induced with Tetratricopeptide repeats, IRF = Interferon Regulatory Factor) are literally named after interferon. The ML model had no biological knowledge — it independently rediscovered the known IFN-β response signature.
+
+**ISG15 in all 8 cell types** is the single strongest biomarker candidate — a universal IFN-β response gene across all PBMC populations.
+
+### Main finding (interview narrative):
+*"Unsupervised SHAP analysis of cell-type-specific classifiers converged on the known IFN-β response gene signature — ISG15, IFIT family, IRF7 — with ISG15 appearing as a top predictor in all 8 cell types. This validates that the models learned real biology rather than technical artifacts."*
+
+### Saved outputs:
+- `results/consensus_biomarkers.csv` — genes ranked by number of cell types they appear in
+- `results/top_genes_<cell_type>.csv` — top 10 SHAP genes per cell type
+
+---
+
+## Phase 5: Biological Validation
+
+### What is ISG15?
+One of the most well-studied interferon-stimulated genes:
+- Ubiquitin-like protein, massively upregulated within hours of IFN stimulation
+- Tags other proteins (ISGylation) to modulate antiviral response
+- Hallmark of interferon signaling — if ISG15 is up, IFN pathway is active
+- Proposed biomarker in lupus — directly relevant to the Kang 2018 disease context
+
+### Validation result:
+10/20 top SHAP candidates have documented roles in IFN signaling. The top 8 by consensus (appearing in 6-8 cell types) are ALL validated known IFN-response genes. Genes appearing in only 1-2 cell types are more speculative.
+
+---
+
+## Why this approach is better than standard Differential Gene Expression (DGE)
+
+**Standard DGE** asks: which genes are statistically different between ctrl and stim? Tests each gene independently, gives p-values and fold changes.
+
+**This project adds three things DGE can't give you:**
+
+1. **Cell-type specificity** — DGE on all cells mixes signals from different populations. Per-cell-type classifiers tell you which genes matter *within* each cell type separately.
+
+2. **Predictive validation** — the genes don't just correlate with stimulation, they *predict* it with 96-99% F1. Prediction is a stronger claim than statistical association.
+
+3. **Interpretability with SHAP** — you know not just which genes differ, but how much each gene contributed to each individual cell's classification. Cell-level resolution DGE can't provide.
+
+**One-sentence interview answer:** *"DGE finds associations. My approach finds predictive, interpretable, cell-type-specific biomarkers — a stronger claim for translational relevance."*
+
+---
+
+## Project complete ✓
+
+## TODO:
 - [x] Phase 1: QC + preprocessing
 - [x] Phase 2: Clustering + cell type annotation
 - [x] Phase 3: ML classifier (stimulated vs control, per cell type)
-- [ ] Phase 4: SHAP analysis → biomarker candidates
-- [ ] Phase 5: Biological validation
+- [x] Phase 4: SHAP analysis → biomarker candidates
+- [x] Phase 5: Biological validation
+- [ ] Write README
