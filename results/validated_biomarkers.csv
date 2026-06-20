@@ -1,0 +1,21 @@
+gene_symbol,n_cell_types,known_role,validated
+ISG15,8,Ubiquitin-like IFN-stimulated gene; hallmark of IFN signaling; proposed lupus biomarker,True
+IFIT3,7,Interferon-induced; blocks viral replication,True
+LY6E,7,IFN-induced; restricts viral entry,True
+ISG20,7,IFN-stimulated exonuclease; degrades viral RNA,True
+IFIT1,6,Interferon-induced; inhibits viral translation,True
+IFIT2,4,Interferon-induced; inhibits viral translation,True
+IRF7,4,Interferon Regulatory Factor 7; master transcription factor driving IFN production,True
+OAS1,3,2'-5'-oligoadenylate synthetase; activates RNase L to degrade viral RNA,True
+MT2A,2,,False
+APOBEC3A,2,IFN-induced cytidine deaminase; restricts retroviruses,True
+TNFSF10,2,,False
+IRF8,2,,False
+CD38,2,,False
+FGFBP2,2,,False
+CXCL10,2,IFN-induced chemokine; recruits immune cells; elevated in lupus patients,True
+SAT1,1,,False
+CCL8,1,,False
+IFITM3,1,,False
+RSAD2,1,,False
+CKB,1,,False
