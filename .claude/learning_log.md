@@ -396,10 +396,56 @@ One of the most well-studied interferon-stimulated genes:
 
 ## Project complete ✓
 
+---
+
+## Limitations (important for interviews)
+
+Interviewers ask about limitations to test scientific maturity. Know these five:
+
+**1. No independent validation dataset**
+Held-out donors came from the same study. Ideally you'd test on a completely separate lupus dataset to show biomarkers generalize beyond Kang 2018.
+
+**2. Megakaryocytes are underpowered**
+Only 346 cells → F1 of 0.717. Results for rare cell types are unreliable. Need more cells to trust those biomarker candidates.
+
+**3. Logistic regression assumes linearity**
+Model assumes gene effects are additive and linear. Gene regulation is often non-linear (combinatorial effects, thresholds). Random forest or neural network might capture more complex patterns — though logistic regression's simplicity makes SHAP more interpretable.
+
+**4. Batch effects not fully corrected**
+Used `batch_key=donor` in HVG selection but no explicit batch correction (Harmony, scVI). Some signal might be donor-specific rather than biological.
+
+**5. Correlation not causation**
+SHAP identifies predictive genes — not causal drivers. ISG15 being upregulated doesn't mean it *causes* the IFN response; it may be a downstream marker. Functional validation (knockdown experiments) would be needed to establish causality.
+
+---
+
+## Interview Q&A
+
+**Q: Walk me through your pipeline.**
+Raw 10x data from GEO → QC filtering (empty droplets, doublets) → normalization → HVG selection → PCA + Leiden clustering → per-cell-type logistic regression classifier with donor-aware split → SHAP analysis → consensus biomarker candidates validated against IFN-β literature.
+
+**Q: Why per cell type?**
+Training on all cells confounds cell type identity with stimulation response. Per-cell-type classifiers ask: within this cell type, what genes distinguish ctrl from stim? That gives cell-type-specific biomarker candidates.
+
+**Q: What is SHAP?**
+Explains why a model made each prediction. For every cell, every gene gets a SHAP value — positive means it pushed toward stim, negative toward ctrl. Averaging absolute SHAP values across cells gives a gene importance ranking. The advantage over coefficients: cell-level resolution and accounts for feature interactions.
+
+**Q: 99% F1 on monocytes — should I be suspicious?**
+No — verified no data leakage (every test donor had both ctrl and stim cells). The UMAP showed ctrl and stim completely separated for monocytes. IFN-β has a massive, well-documented transcriptional effect on monocytes, which are primary interferon responders. The biology is genuinely that strong.
+
+**Q: How is this better than DGE?**
+DGE finds associations. This approach finds predictive, interpretable, cell-type-specific biomarkers. Three advantages: (1) cell-type specificity — DGE mixes signals across populations, (2) predictive validation — genes predict stimulation at 96-99% F1, not just correlate with it, (3) cell-level resolution via SHAP — DGE can't tell you how much each gene contributed to each individual cell's classification.
+
+**Q: What are the limitations?**
+No independent validation dataset, Megakaryocytes underpowered, logistic regression assumes linearity, batch effects not fully corrected, correlation not causation.
+
+---
+
 ## TODO:
 - [x] Phase 1: QC + preprocessing
 - [x] Phase 2: Clustering + cell type annotation
 - [x] Phase 3: ML classifier (stimulated vs control, per cell type)
 - [x] Phase 4: SHAP analysis → biomarker candidates
 - [x] Phase 5: Biological validation
-- [ ] Write README
+- [x] README
+- [ ] Practice explaining out loud
